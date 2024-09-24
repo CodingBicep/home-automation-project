@@ -8,8 +8,7 @@
 #include "config.h"  // Include your configuration file
 
 // Adafruit IO server and port
-#define AIO_SERVER      "io.adafruit.com"
-#define AIO_SERVERPORT  1883
+
 
 // Create WiFi and MQTT clients
 WiFiClient client;
