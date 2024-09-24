@@ -15,8 +15,8 @@
 #define CHAT_ID_ADDR 128
 
 // Wi-Fi credentials
-char ssid[32];
-char password[32];
+char ssid[32] = "YOUR_SSID"; // Replace with your SSID
+char password[32] = "YOUR_PASSWORD"; // Replace with your password
 
 // NTP server and time zone details
 const char* ntpServer = "time.google.com";
@@ -24,8 +24,8 @@ const long gmtOffset_sec = 19800;  // GMT+5:30 (Indian Standard Time)
 const int daylightOffset_sec = 0;  // No daylight saving in India
 
 // Telegram Bot credentials
-char botToken[32];
-char chatId[32];
+char botToken[32] = "YOUR_BOT_TOKEN"; // Replace with your Bot Token
+char chatId[32] = "YOUR_CHAT_ID"; // Replace with your Chat ID
 
 // Custom characters for Wi-Fi and power status
 byte wifiOn[8] = {
@@ -286,53 +286,70 @@ void printLocalTime() {
     strftime(timeString, sizeof(timeString), "%H:%M:%S", &timeinfo);
     lcd.setCursor(0, 1);
     lcd.print(timeString);
+  } else {
+    lcd.setCursor(0, 0);
+    lcd.print("Time Error");
   }
 }
 
 void displayWiFiStatus() {
+  lcd.setCursor(0, 0);
+  lcd.print("WiFi: ");
   if (WiFi.status() == WL_CONNECTED) {
-    lcd.setCursor(0, 1);
-    lcd.write(0); // Custom character for Wi-Fi ON
+    lcd.write(0); // Display Wi-Fi on icon
   } else {
-    lcd.setCursor(0, 1);
-    lcd.write(1); // Custom character for Wi-Fi OFF
+    lcd.write(1); // Display Wi-Fi off icon
   }
 }
 
 void displayPowerStatus() {
-  lcd.setCursor(14, 1);
-  lcd.write(powerState ? 2 : 3); // 2 for power ON, 3 for power OFF
+  lcd.setCursor(10, 0);
+  lcd.print("Power: ");
+  if (powerState == LOW) {
+    lcd.write(3); // Display power not available icon
+  } else {
+    lcd.write(2); // Display power available icon
+  }
 }
 
 void displayTemperatureHumidity() {
   float humidity = dht.readHumidity();
   float temperature = dht.readTemperature();
-
-  lcd.setCursor(0, 0);
-  lcd.print("Temp: ");
-  lcd.print(temperature);
-  lcd.print("C");
-
-  lcd.setCursor(0, 1);
-  lcd.print("Hum: ");
-  lcd.print(humidity);
-  lcd.print("%");
+  
+  if (!isnan(humidity) && !isnan(temperature)) {
+    lcd.setCursor(0, 0);
+    lcd.print("Temp: ");
+    lcd.print(temperature);
+    lcd.print(" C");
+    lcd.setCursor(0, 1);
+    lcd.print("Humidity: ");
+    lcd.print(humidity);
+    lcd.print(" %");
+  } else {
+    lcd.setCursor(0, 0);
+    lcd.print("Sensor Error");
+  }
 }
 
 void showLoadingScreen() {
   lcd.clear();
+  lcd.setCursor(0, 0);
   lcd.print("Loading...");
-  delay(2000);
+  delay(2000); // Display loading for 2 seconds
 }
 
 void showWelcomeScreen() {
   lcd.clear();
-  lcd.print("Welcome!");
-  delay(2000);
+  lcd.setCursor(0, 0);
+  lcd.print("Welcome to Home");
+  lcd.setCursor(0, 1);
+  lcd.print("Automation System");
+  delay(3000); // Display welcome screen for 3 seconds
 }
 
 void showErrorScreen() {
   lcd.clear();
-  lcd.print("DHT Error");
-  delay(2000);
+  lcd.setCursor(0, 0);
+  lcd.print("DHT Sensor Error");
+  delay(3000); // Display error for 3 seconds
 }
