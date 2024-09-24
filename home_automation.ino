@@ -6,10 +6,17 @@
 #include <time.h>
 #include <KMESerial.h>
 #include <DHT.h>
+#include <EEPROM.h>
+
+// EEPROM addresses
+#define SSID_ADDR 0
+#define PASSWORD_ADDR 32
+#define BOT_TOKEN_ADDR 64
+#define CHAT_ID_ADDR 128
 
 // Wi-Fi credentials
-const char* ssid = "INTECH 2.4G";
-const char* password = "Rawale@123";
+char ssid[32];
+char password[32];
 
 // NTP server and time zone details
 const char* ntpServer = "time.google.com";
@@ -17,8 +24,8 @@ const long gmtOffset_sec = 19800;  // GMT+5:30 (Indian Standard Time)
 const int daylightOffset_sec = 0;  // No daylight saving in India
 
 // Telegram Bot credentials
-#define BOTtoken "7215863945:AAHTJMy49kovUyq7DjXFMRlMaXxDuTPllO8" // Replace with your bot token
-#define CHAT_ID "7166272891"    // Replace with your chat ID
+char botToken[32];
+char chatId[32];
 
 // Custom characters for Wi-Fi and power status
 byte wifiOn[8] = {
@@ -81,7 +88,7 @@ DHT dht(dhtPin, DHTTYPE);
 
 // Telegram bot setup
 WiFiClientSecure client;
-UniversalTelegramBot bot(BOTtoken, client);
+UniversalTelegramBot bot(botToken, client);
 
 // KMESerial setup
 KMESerial KMESerial;
@@ -100,11 +107,19 @@ void switchstate(KME State) {
 }
 
 void setup() {
+  // Initialize EEPROM
+  EEPROM.begin(512);  // Initialize EEPROM with size (adjust as needed)
+
+  // Read sensitive data from EEPROM
+  EEPROM.get(SSID_ADDR, ssid);
+  EEPROM.get(PASSWORD_ADDR, password);
+  EEPROM.get(BOT_TOKEN_ADDR, botToken);
+  EEPROM.get(CHAT_ID_ADDR, chatId);
+
   // Initialize Serial Monitor
   Serial.begin(74880); // Set the baud rate to match your communication settings
 
   // Initialize KMESerial
-  // No KMESerial.begin() call needed
   KMESerial.setCallback(switchstate);
 
   // Connect to Wi-Fi
@@ -150,8 +165,8 @@ void setup() {
     client.setInsecure(); // Disable SSL certificate verification
 
     // Notify on Telegram
-    bot.sendMessage(CHAT_ID, "WiFi Connected!", "");
-    bot.sendMessage(CHAT_ID, "System has Started!!", "");
+    bot.sendMessage(chatId, "WiFi Connected!", "");
+    bot.sendMessage(chatId, "System has Started!!", "");
 
     // Show loading animation while booting
     showLoadingScreen();
@@ -187,10 +202,10 @@ void loop() {
       powerState = reading;  // Update the stable state
       if (powerState == LOW) {
         // Power cut detected
-        bot.sendMessage(CHAT_ID, "ALERT! Power Cut Detected!!", "");
+        bot.sendMessage(chatId, "ALERT! Power Cut Detected!!", "");
       } else {
         // Power restored
-        bot.sendMessage(CHAT_ID, "Power Restored!", "");
+        bot.sendMessage(chatId, "Power Restored!", "");
       }
     }
   }
@@ -264,74 +279,60 @@ void printLocalTime() {
   if (getLocalTime(&timeinfo)) {
     char dateString[17];
     strftime(dateString, sizeof(dateString), "%a %d-%m-%y", &timeinfo);
-
-    char timeString[17];
-    strftime(timeString, sizeof(timeString), "%H:%M:%S", &timeinfo);
-
     lcd.setCursor(0, 0);
-    lcd.print(timeString);
-    lcd.setCursor(0, 1);
     lcd.print(dateString);
-  } else {
-    Serial.println("Failed to obtain time");
-    lcd.setCursor(0, 0);
-    lcd.print("Time not found");
+
+    char timeString[9];
+    strftime(timeString, sizeof(timeString), "%H:%M:%S", &timeinfo);
+    lcd.setCursor(0, 1);
+    lcd.print(timeString);
   }
 }
 
 void displayWiFiStatus() {
-  lcd.setCursor(14, 0);
   if (WiFi.status() == WL_CONNECTED) {
-    lcd.write(byte(0)); // Wi-Fi on custom character
+    lcd.setCursor(0, 1);
+    lcd.write(0); // Custom character for Wi-Fi ON
   } else {
-    lcd.write(byte(1)); // Wi-Fi off custom character
+    lcd.setCursor(0, 1);
+    lcd.write(1); // Custom character for Wi-Fi OFF
   }
 }
 
 void displayPowerStatus() {
-  lcd.setCursor(15, 1);
-  if (powerState == HIGH) {
-    lcd.write(byte(2)); // Power available custom character
-  } else {
-    lcd.write(byte(3)); // Power not available custom character
-  }
+  lcd.setCursor(14, 1);
+  lcd.write(powerState ? 2 : 3); // 2 for power ON, 3 for power OFF
 }
 
 void displayTemperatureHumidity() {
+  float humidity = dht.readHumidity();
+  float temperature = dht.readTemperature();
+
   lcd.setCursor(0, 0);
   lcd.print("Temp: ");
-  lcd.print(dht.readTemperature());
-  lcd.print((char)223);
+  lcd.print(temperature);
   lcd.print("C");
 
   lcd.setCursor(0, 1);
   lcd.print("Hum: ");
-  lcd.print(dht.readHumidity());
+  lcd.print(humidity);
   lcd.print("%");
 }
 
 void showLoadingScreen() {
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("System Starting...");
-  lcd.setCursor(0, 1);
-  lcd.print("Please wait...");
-  delay(2000);  // Show loading screen for 2 seconds
+  lcd.print("Loading...");
+  delay(2000);
 }
 
 void showWelcomeScreen() {
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Welcome to the");
-  lcd.setCursor(0, 1);
-  lcd.print("Home Automation");
-  delay(2000);  // Show welcome screen for 2 seconds
+  lcd.print("Welcome!");
+  delay(2000);
 }
 
 void showErrorScreen() {
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("DHT Sensor Error");
-  lcd.setCursor(0, 1);
-  lcd.print("Check Wiring!");
+  lcd.print("DHT Error");
+  delay(2000);
 }
