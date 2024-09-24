@@ -7,9 +7,6 @@
 #include <SoftwareSerial.h>
 #include "config.h"  // Include your configuration file
 
-// Adafruit IO server and port
-
-
 // Create WiFi and MQTT clients
 WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, IO_USERNAME, IO_KEY);
