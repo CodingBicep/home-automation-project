@@ -5,14 +5,7 @@
 #include <Adafruit_MQTT.h>
 #include <Adafruit_MQTT_Client.h>
 #include <SoftwareSerial.h>
-
-// Wi-Fi credentials
-const char* ssid = "INTECH 2.4G";
-const char* password = "Rawale@123";
-
-// Adafruit IO credentials
-#define IO_USERNAME  "automation0924"
-#define IO_KEY       "aio_ahTL89ZINr5gqNvMS8DAFl8T34gX"
+#include "config.h"  // Include your configuration file
 
 // Adafruit IO server and port
 #define AIO_SERVER      "io.adafruit.com"
@@ -50,9 +43,7 @@ bool lastPowerState = HIGH;
 int Loc_State = 0;
 int GA_State = 0;
 
-// Recipient phone number for SMS (update this with the Indian phone number)
-const char* phoneNumber = "919322270955";  // Example Indian phone number (replace with the actual number)
-
+// Setup function
 void setup() {
   Serial.begin(115200);
   sim800.begin(9600);  // Initialize SIM800 module
@@ -77,16 +68,13 @@ void setup() {
 
 void loop() {
   MQTT_connect();
-
   checkMQTTSubscriptions();
-
   debouncePowerStatus();
-
   Send_Out();
 }
 
 void connectToWiFi() {
-  WiFi.begin(ssid, password);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -97,8 +85,8 @@ void connectToWiFi() {
 }
 
 void sendSMS(const char* message) {
-  modem.sendSMS(phoneNumber, message);
-  Serial.println("SMS sent to " + String(phoneNumber) + ": " + message);
+  modem.sendSMS(PHONE_NUMBER, message);
+  Serial.println("SMS sent to " + String(PHONE_NUMBER) + ": " + message);
 }
 
 void checkMQTTSubscriptions() {
